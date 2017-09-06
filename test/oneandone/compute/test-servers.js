@@ -19,7 +19,7 @@ describe('Server tests', function () {
   this.timeout(18000000);
   var hockInstance, mockServer;
   before(function (done) {
-    client = helpers.createClient('oneandone', 'compute');
+    client = helpers.createClient('oneandone', 'compute', options);
     if (!mock) {
       client.createServer(options, function (err, srv1) {
         should.not.exist(err);
@@ -44,10 +44,16 @@ describe('Server tests', function () {
         done();
       });
     } else {
-      client.destroyServer(server, function (err, response) {
-        should.not.exist(err);
-        should.exist(response);
-        done();
+      server.setWait({ status: server.STATUS.running }, 5000, function (err) {
+        if (err) {
+          console.dir(err);
+          return;
+        }
+        client.destroyServer(server, function (err, response) {
+          should.not.exist(err);
+          should.exist(response);
+          done();
+        });
       });
     }
   });
@@ -91,11 +97,17 @@ describe('Server tests', function () {
         .get('/servers/39AA65F5D5B02FA02D58173094EBAF95/status/action')
         .reply(200, helpers.loadFixture('oneandone/getServer.json'));
     }
-    client.rebootServer(server, function (err, srv1) {
-      should.not.exist(err);
-      srv1.should.be.instanceOf(Server);
-      hockInstance && hockInstance.done();
-      done();
+    server.setWait({ status: server.STATUS.running }, 5000, function (err) {
+      if (err) {
+        console.dir(err);
+        return;
+      }
+      client.rebootServer(server, function (err, srv1) {
+        should.not.exist(err);
+        srv1.should.be.instanceOf(Server);
+        hockInstance && hockInstance.done();
+        done();
+      });
     });
   });
 });
